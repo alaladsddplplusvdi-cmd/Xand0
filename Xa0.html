@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe • Dark</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #121212;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .game-container {
+            background: #1e1e1e;
+            border-radius: 32px;
+            padding: 40px 30px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7), 0 0 0 1px #333 inset;
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .title {
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 400;
+            margin-bottom: 30px;
+            font-size: 1.4rem;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            background: #2a2a2a;
+            border: none;
+            border-radius: 20px;
+            font-size: 4rem;
+            font-weight: 700;
+            color: #00ff99;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #0f0f0f, 0 10px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .cell:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #0f0f0f, 0 5px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .cell.X {
+            color: #00ff99;
+            text-shadow: 0 0 15px #00ff99;
+        }
+
+        .cell.O {
+            color: #ff6666;
+            text-shadow: 0 0 15px #ff4d4d;
+        }
+
+        .cell:disabled {
+            opacity: 0.9;
+            cursor: not-allowed;
+        }
+
+        .status {
+            color: #bbb;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            min-height: 2rem;
+        }
+
+        .reset-btn {
+            background: #2a2a2a;
+            border: none;
+            border-radius: 60px;
+            padding: 14px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #e0e0e0;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0f0f0f, 0 8px 12px rgba(0, 0, 0, 0.5);
+            transition: all 0.1s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .reset-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #0f0f0f, 0 5px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        .reset-btn:hover {
+            background: #3a3a3a;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="title">⚡ Tic‑Tac‑Toe ⚡</div>
+
+        <div class="board" id="board">
+            <button class="cell" id="btn0"></button>
+            <button class="cell" id="btn1"></button>
+            <button class="cell" id="btn2"></button>
+            <button class="cell" id="btn3"></button>
+            <button class="cell" id="btn4"></button>
+            <button class="cell" id="btn5"></button>
+            <button class="cell" id="btn6"></button>
+            <button class="cell" id="btn7"></button>
+            <button class="cell" id="btn8"></button>
+        </div>
+
+        <div class="status" id="status">Ход X</div>
+        <button class="reset-btn" id="resetBtn">⟲ Новая игра</button>
+    </div>
+
+    <script>
+        (function() {
+            const cells = document.querySelectorAll('.cell');
+            const statusDiv = document.getElementById('status');
+            const resetBtn = document.getElementById('resetBtn');
+            let board = ['', '', '', '', '', '', '', '', ''];
+            let currentPlayer = 'X';
+            let gameActive = true;
+
+            // Победные комбинации
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+                [0, 4, 8], [2, 4, 6]             // diagonals
+            ];
+
+            // Обновление отображения
+            function renderBoard() {
+                cells.forEach((cell, index) => {
+                    cell.textContent = board[index];
+                    cell.classList.remove('X', 'O');
+                    if (board[index] === 'X') cell.classList.add('X');
+                    if (board[index] === 'O') cell.classList.add('O');
+                });
+                statusDiv.textContent = gameActive ? `Ход ${currentPlayer}` : 'Игра окончена';
+            }
+
+            // Проверка победителя
+            function checkWinner() {
+                for (let pattern of winPatterns) {
+                    const [a, b, c] = pattern;
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        return board[a];
+                    }
+                }
+                return null;
+            }
+
+            // Проверка ничьей
+            function isBoardFull() {
+                return board.every(cell => cell !== '');
+            }
+
+            // Обработка хода
+            function handleCellClick(index) {
+                if (!gameActive) return;
+                if (board[index] !== '') return;
+
+                board[index] = currentPlayer;
+                renderBoard();
+
+                const winner = checkWinner();
+                if (winner) {
+                    gameActive = false;
+                    setTimeout(() => {
+                        alert(`Игрок ${winner} победил!`);
+                        resetGame();
+                    }, 50);
+                } else if (isBoardFull()) {
+                    gameActive = false;
+                    setTimeout(() => {
+                        alert('Ничья!');
+                        resetGame();
+                    }, 50);
+                } else {
+                    currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                    statusDiv.textContent = `Ход ${currentPlayer}`;
+                }
+            }
+
+            // Сброс игры
+            function resetGame() {
+                board = ['', '', '', '', '', '', '', '', ''];
+                currentPlayer = 'X';
+                gameActive = true;
+                renderBoard();
+                statusDiv.textContent = `Ход ${currentPlayer}`;
+            }
+
+            // Назначение обработчиков
+            cells.forEach((cell, index) => {
+                cell.addEventListener('click', () => handleCellClick(index));
+            });
+
+            resetBtn.addEventListener('click', resetGame);
+
+            // Инициализация
+            renderBoard();
+        })();
+    </script>
+</body>
+</html>
